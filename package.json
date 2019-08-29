@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "jest": "jest",
+    "jest": "jest --config ./jest.config.json",
     "lint": "eslint 'src/**/*.ts'",
     "lint:fix": "eslint --fix 'src/**/*.ts'",
     "prepare": "npm run build",
@@ -13,18 +13,19 @@
     "setup": "npm install",
     "test": "npm run lint && npm run jest",
     "tsc": "tsc"
-  },  "author": "Matti Hiltunen",
+  },
+  "author": "Matti Hiltunen",
   "license": "Apache-2.0",
   "files": [
     "dist"
   ],
   "devDependencies": {
-    "@types/jest": "^24.0.18",
-    "@typescript-eslint/eslint-plugin": "^2.0.0",
-    "@typescript-eslint/parser": "^2.0.0",
-    "eslint": "^6.2.2",
-    "jest": "^24.9.0",
-    "ts-jest": "^24.0.2",
-    "typescript": "^3.6.2"
+    "@types/jest": "24.0.18",
+    "@typescript-eslint/eslint-plugin": "2.0.0",
+    "@typescript-eslint/parser": "2.0.0",
+    "eslint": "6.2.2",
+    "jest": "24.9.0",
+    "ts-jest": "24.0.2",
+    "typescript": "3.5.3"
   }
 }
