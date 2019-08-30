@@ -1,3 +1,5 @@
+/* eslint-disable max-classes-per-file */
+
 import { ArgumentTypesKey } from './symbols';
 import { assertNotNull } from './utils';
 import { FactoryFunction, InjectableConstructor } from './types';

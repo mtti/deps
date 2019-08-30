@@ -1,3 +1,5 @@
+/* eslint-disable max-classes-per-file */
+
 import { assertNotNull } from './utils';
 import { Registry } from './registry';
 import { injectableClass, injectableFactory } from './injectable';
