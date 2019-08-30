@@ -15,22 +15,23 @@ class DummyTargetService {
     this.dependency = dependency;
   }
 }
-injectableClass(DummyTargetService, [ DummyDependency ]);
+injectableClass(DummyTargetService, [DummyDependency]);
 
 class CircularA {}
 
 class CircularB {
   dep: CircularA;
+
   constructor(dep: CircularA) {
     this.dep = dep;
   }
 }
-injectableClass(CircularB, [ CircularA ]);
+injectableClass(CircularB, [CircularA]);
 
 async function createCircularA(dep: CircularB): Promise<CircularA> {
   return new CircularA();
 }
-injectableFactory(createCircularA, [ CircularB ]);
+injectableFactory(createCircularA, [CircularB]);
 
 describe('Registry', () => {
   let registry: Registry = new Registry();
@@ -62,7 +63,7 @@ describe('Registry', () => {
       beforeEach(() => {
         registry.bind(DummyDependency, new DummyDependency());
         try {
-          registry.bind(DummyDependency, new DummyDependency())
+          registry.bind(DummyDependency, new DummyDependency());
         } catch (err) {
           error = err;
         }

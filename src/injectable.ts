@@ -15,7 +15,7 @@ import { FactoryFunction, InjectableConstructor } from './types';
  */
 export function injectableClass<T>(
   type: InjectableConstructor<T>,
-  argTypes: InjectableConstructor<any>[]
+  argTypes: InjectableConstructor<any>[],
 ): InjectableConstructor<T> {
   type[ArgumentTypesKey] = [...argTypes];
   return type;
@@ -36,7 +36,7 @@ export function injectableClass<T>(
  */
 export function injectableFactory<T>(
   factory: FactoryFunction<T>,
-  argTypes: InjectableConstructor<any>[]
+  argTypes: InjectableConstructor<any>[],
 ): FactoryFunction<T> {
   factory[ArgumentTypesKey] = [...argTypes];
   return factory;

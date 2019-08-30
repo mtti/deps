@@ -11,6 +11,7 @@ class SecondDummyDependency {}
 
 class DummyResult {
   first: FirstDummyDependency;
+
   second: SecondDummyDependency;
 
   constructor(first: FirstDummyDependency, second: SecondDummyDependency) {
@@ -26,11 +27,12 @@ describe('decorators', () => {
     beforeEach(() => {
       targetType = class {
         first: FirstDummyDependency;
+
         second: SecondDummyDependency;
 
         constructor(
           first: FirstDummyDependency,
-          second: SecondDummyDependency
+          second: SecondDummyDependency,
         ) {
           this.first = first;
           this.second = second;
@@ -41,13 +43,13 @@ describe('decorators', () => {
     beforeEach(() => {
       injectableClass(
         assertNotNull(targetType),
-        [ FirstDummyDependency, SecondDummyDependency ]
+        [FirstDummyDependency, SecondDummyDependency],
       );
     });
 
     it('adds the correct runtime type information', () => {
       expect(assertNotNull(targetType)[ArgumentTypesKey]).toEqual(
-        [ FirstDummyDependency, SecondDummyDependency ]
+        [FirstDummyDependency, SecondDummyDependency],
       );
     });
   });
@@ -58,20 +60,20 @@ describe('decorators', () => {
     beforeEach(() => {
       targetFunction = async (
         first: FirstDummyDependency,
-        second: SecondDummyDependency
+        second: SecondDummyDependency,
       ): Promise<DummyResult> => new DummyResult(first, second);
     });
 
     beforeEach(() => {
       injectableFactory(
         assertNotNull(targetFunction),
-        [ FirstDummyDependency, SecondDummyDependency ]
+        [FirstDummyDependency, SecondDummyDependency],
       );
     });
 
     it('adds the correct runtime type information', () => {
       expect(assertNotNull(targetFunction)[ArgumentTypesKey]).toEqual(
-        [ FirstDummyDependency, SecondDummyDependency ]
+        [FirstDummyDependency, SecondDummyDependency],
       );
     });
   });

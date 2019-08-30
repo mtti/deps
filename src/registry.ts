@@ -3,7 +3,7 @@ import {
   FactoryDirectory,
   FactoryFunction,
   InjectableConstructor,
-  ServiceDirectory
+  ServiceDirectory,
 } from './types';
 
 /**
@@ -69,7 +69,7 @@ export class Registry {
       throw new Error(`Not found: ${type.name}`);
     }
 
-    const instance: unknown  = this._services[key];
+    const instance: unknown = this._services[key];
 
     if (!(instance instanceof type)) {
       throw new Error(`Registered instance is not a ${type.name}`);
@@ -85,7 +85,7 @@ export class Registry {
    */
   addFactory<T>(
     type: InjectableConstructor<T>,
-    factory: FactoryFunction<T>
+    factory: FactoryFunction<T>,
   ): void {
     const key = Registry.getId(type);
     this._factories[key] = factory;
@@ -122,7 +122,7 @@ export class Registry {
 
       const argTypes = factory[ArgumentTypesKey] || [];
       const args: unknown[] = await Promise.all(
-        argTypes.map(argType => this._resolve(argType, stack))
+        argTypes.map((argType) => this._resolve(argType, stack)),
       );
 
       result = await factory(...args);
@@ -130,7 +130,7 @@ export class Registry {
     } else {
       const argTypes = type[ArgumentTypesKey] || [];
       const args: unknown[] = await Promise.all(
-        argTypes.map(argType => this._resolve(argType, stack))
+        argTypes.map((argType) => this._resolve(argType, stack)),
       );
 
       result = new type(...args);
