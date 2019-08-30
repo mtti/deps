@@ -12,6 +12,7 @@
     "prepublishOnly": "npm run test",
     "setup": "npm install",
     "test": "npm run lint && npm run jest",
+    "test:docker": "docker build -f ./Dockerfile-test -t deps-test . && docker run --rm -it deps-test",
     "tsc": "tsc"
   },
   "author": "Matti Hiltunen",
