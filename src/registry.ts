@@ -25,7 +25,9 @@ export class Registry {
     if (existingKey) {
       result = existingKey;
     } else {
+      // eslint-disable-next-line no-underscore-dangle, no-plusplus
       result = (Registry._nextId++).toString();
+      // eslint-disable-next-line no-param-reassign
       type[DependencyIdKey] = result;
     }
 
@@ -133,6 +135,7 @@ export class Registry {
         argTypes.map((argType) => this._resolve(argType, stack)),
       );
 
+      // eslint-disable-next-line new-cap
       result = new type(...args);
       this.bind(type, result);
     }

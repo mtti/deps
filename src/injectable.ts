@@ -1,3 +1,5 @@
+/* eslint-disable no-param-reassign */
+
 import { ArgumentTypesKey } from './symbols';
 import { FactoryFunction, InjectableConstructor } from './types';
 
