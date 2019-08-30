@@ -54,10 +54,10 @@ describe('decorators', () => {
     let targetFunction: FactoryFunction<unknown>|null;
 
     beforeEach(() => {
-      targetFunction = (
+      targetFunction = async (
         first: FirstDummyDependency,
         second: SecondDummyDependency
-      ): DummyResult => new DummyResult(first, second);
+      ): Promise<DummyResult> => new DummyResult(first, second);
     });
 
     beforeEach(() => {

@@ -50,7 +50,6 @@ export class Registry {
     }
 
     if (this._services[key]) {
-      console.log(this._services[key]);
       throw new Error(`Already bound: ${type.name}`);
     }
 
@@ -100,9 +99,21 @@ export class Registry {
    * @param extraArgs Extra arguments to pass to the constructor after the
    *   injected dependencies.
    */
-  resolve<T>(type: InjectableConstructor<T>, ...extraArgs: any[]): T {
+  async resolve<T>(type: InjectableConstructor<T>): Promise<T> {
+    return this._resolve(type, []);
+  }
+
+  private async _resolve<T>(
+    type: InjectableConstructor<T>,
+    stack: string[],
+  ): Promise<T> {
     const key = Registry.getId(type);
     let result: unknown;
+
+    if (stack.includes(key)) {
+      throw new Error(`Circular dependency detected: ${type.name}`);
+    }
+    stack.push(key);
 
     if (this._services[key]) {
       result = this._services[key];
@@ -110,17 +121,17 @@ export class Registry {
       const factory = this._factories[key];
 
       const argTypes = factory[ArgumentTypesKey] || [];
-      const args: any[] = argTypes
-        .map(argType => this.get(argType));
-      args.push(...extraArgs);
+      const args: unknown[] = await Promise.all(
+        argTypes.map(argType => this._resolve(argType, stack))
+      );
 
-      result = factory(...args);
+      result = await factory(...args);
       this.bind(type, result);
     } else {
       const argTypes = type[ArgumentTypesKey] || [];
-      const args: any[] = argTypes
-        .map(argType => this.get(argType));
-      args.push(...extraArgs);
+      const args: unknown[] = await Promise.all(
+        argTypes.map(argType => this._resolve(argType, stack))
+      );
 
       result = new type(...args);
       this.bind(type, result);

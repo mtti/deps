@@ -4,8 +4,8 @@ import { ArgumentTypesKey, DependencyIdKey } from './symbols';
  * Factory function with dependency injection metadata.
  */
 export interface FactoryFunction<T> extends Function {
-  [ArgumentTypesKey]?: InjectableConstructor<any>[];
-  (...args: any[]): T;
+  [ArgumentTypesKey]?: InjectableConstructor<unknown>[];
+  (...args: any[]): Promise<T>;
 }
 
 /**
@@ -13,7 +13,7 @@ export interface FactoryFunction<T> extends Function {
  */
 export interface InjectableConstructor<T> extends Function {
   [DependencyIdKey]?: string;
-  [ArgumentTypesKey]?: InjectableConstructor<any>[];
+  [ArgumentTypesKey]?: InjectableConstructor<unknown>[];
   new (...args: any[]): T;
 }
 
@@ -28,5 +28,5 @@ export type ServiceDirectory = {
  * Indexes factory functions by string ID.
  */
 export type FactoryDirectory = {
-  [key: string]: FactoryFunction<any>;
+  [key: string]: FactoryFunction<unknown>;
 };

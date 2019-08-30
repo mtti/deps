@@ -1,20 +1,34 @@
 import { assertNotNull } from './utils';
-import { injectableClass } from './injectable';
 import { Registry } from './registry';
+import { injectableClass, injectableFactory } from './injectable';
 
 class ParentDependency {}
 
 class DummyDependency extends ParentDependency {}
 
-class InjectableDependency {
+class DummyTargetService {
   dependency: DummyDependency;
 
   constructor(dependency: DummyDependency) {
     this.dependency = dependency;
   }
 }
+injectableClass(DummyTargetService, [ DummyDependency ]);
 
-injectableClass(InjectableDependency, [ DummyDependency ]);
+class CircularA {}
+
+class CircularB {
+  dep: CircularA;
+  constructor(dep: CircularA) {
+    this.dep = dep;
+  }
+}
+injectableClass(CircularB, [ CircularA ]);
+
+async function createCircularA(dep: CircularB): Promise<CircularA> {
+  return new CircularA();
+}
+injectableFactory(createCircularA, [ CircularB ]);
 
 describe('Registry', () => {
   let registry: Registry = new Registry();
@@ -104,23 +118,40 @@ describe('Registry', () => {
   });
 
   describe('resolve()', () => {
-    let result: InjectableDependency|null = null;
+    describe('with manually bound dependency', () => {
+      let result: DummyTargetService|null = null;
+      beforeEach(() => {
+        result = null;
+      });
 
-    beforeEach(() => {
-      result = null;
+      beforeEach(async () => {
+        registry.bind(DummyDependency, dummyDependency);
+        result = await registry.resolve(DummyTargetService);
+      });
+
+      it('successfully creates an instance', () => {
+        expect(result).not.toBeNull();
+      });
+
+      it('injects dependency into the instance', () => {
+        expect(assertNotNull(result).dependency).toBe(dummyDependency);
+      });
     });
 
-    beforeEach(() => {
-      registry.bind(DummyDependency, dummyDependency);
-      result = registry.resolve(InjectableDependency);
-    });
+    describe('with circular dependency', () => {
+      beforeEach(async () => {
+        try {
+          registry.addFactory(CircularA, createCircularA);
+          await registry.resolve(CircularB);
+        } catch (err) {
+          error = err;
+        }
+      });
 
-    it('successfully creates an instance', () => {
-      expect(result).not.toBeNull();
-    });
-
-    it('injects dependency into the instance', () => {
-      expect(assertNotNull(result).dependency).toBe(dummyDependency);
+      it('throws an error', () => {
+        expect(assertNotNull(error).message)
+          .toEqual('Circular dependency detected: CircularB');
+      });
     });
   });
 });
