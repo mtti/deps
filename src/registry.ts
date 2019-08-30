@@ -1,5 +1,10 @@
 import { ArgumentTypesKey, DependencyIdKey } from './symbols';
-import { InjectableConstructor, ServiceDirectory } from './types';
+import {
+  FactoryDirectory,
+  FactoryFunction,
+  InjectableConstructor,
+  ServiceDirectory
+} from './types';
 
 /**
  * Stores instances indexed by their type in a run-time type-safe fashion.
@@ -10,6 +15,7 @@ export class Registry {
   /**
    * Get the internal global dependency ID of a type, or assign it a new one
    * if does not already have one.
+   *
    * @param type
    */
   private static getId<T>(type: InjectableConstructor<T>): string {
@@ -28,8 +34,11 @@ export class Registry {
 
   private _services: ServiceDirectory = {};
 
+  private _factories: FactoryDirectory = {};
+
   /**
    * Index a concrete object by its type.
+   *
    * @param type The object's constructor/class
    * @param instance A concrete instance of `type`.
    */
@@ -41,6 +50,7 @@ export class Registry {
     }
 
     if (this._services[key]) {
+      console.log(this._services[key]);
       throw new Error(`Already bound: ${type.name}`);
     }
 
@@ -48,23 +58,19 @@ export class Registry {
   }
 
   /**
-   * Retrieve a previously bound instance by its type.
+   * Retrieve an already resolved instance by its type, throwing an error
+   * if it's not found.
+   *
    * @param type The object's type
    */
   get<T>(type: InjectableConstructor<T>): T {
-    const key = type[DependencyIdKey];
-    if (!key) {
-      throw new Error(`Not registered: ${type.name}`);
+    const key = Registry.getId(type);
+
+    if (!this._services[key]) {
+      throw new Error(`Not found: ${type.name}`);
     }
 
-    let instance: unknown;
-
-    if (this._services[key]) {
-      instance = this._services[key];
-    } else {
-      instance = this.resolve(type);
-      this.bind(type, instance);
-    }
+    const instance: unknown  = this._services[key];
 
     if (!(instance instanceof type)) {
       throw new Error(`Registered instance is not a ${type.name}`);
@@ -74,23 +80,56 @@ export class Registry {
   }
 
   /**
+   * Register function `factory` as the source of `type` instances.
+   * @param type
+   * @param factory
+   */
+  addFactory<T>(
+    type: InjectableConstructor<T>,
+    factory: FactoryFunction<T>
+  ): void {
+    const key = Registry.getId(type);
+    this._factories[key] = factory;
+  }
+
+  /**
    * Create an instance of a class while injecting dependencies to its
    * constructor based on argument type information added witn `injectable()`.
+   *
    * @param type A class constructor.
    * @param extraArgs Extra arguments to pass to the constructor after the
    *   injected dependencies.
    */
   resolve<T>(type: InjectableConstructor<T>, ...extraArgs: any[]): T {
-    const argTypes = type[ArgumentTypesKey];
+    const key = Registry.getId(type);
+    let result: unknown;
 
-    if (!argTypes) {
-      return new type(...extraArgs);
+    if (this._services[key]) {
+      result = this._services[key];
+    } else if (this._factories[key]) {
+      const factory = this._factories[key];
+
+      const argTypes = factory[ArgumentTypesKey] || [];
+      const args: any[] = argTypes
+        .map(argType => this.get(argType));
+      args.push(...extraArgs);
+
+      result = factory(...args);
+      this.bind(type, result);
+    } else {
+      const argTypes = type[ArgumentTypesKey] || [];
+      const args: any[] = argTypes
+        .map(argType => this.get(argType));
+      args.push(...extraArgs);
+
+      result = new type(...args);
+      this.bind(type, result);
     }
 
-    const args: any[] = argTypes
-      .map(argType => this.get(argType));
-    args.push(...extraArgs);
+    if (!(result instanceof type)) {
+      throw new Error(`Resolved to an incompatible instance: ${type.name}`);
+    }
 
-    return new type(...args);
+    return result;
   }
 }

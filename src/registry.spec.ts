@@ -1,4 +1,5 @@
-import { injectable } from './injectable';
+import { assertNotNull } from './utils';
+import { injectableClass } from './injectable';
 import { Registry } from './registry';
 
 class ParentDependency {}
@@ -13,7 +14,7 @@ class InjectableDependency {
   }
 }
 
-injectable(InjectableDependency, [ DummyDependency ]);
+injectableClass(InjectableDependency, [ DummyDependency ]);
 
 describe('Registry', () => {
   let registry: Registry = new Registry();
@@ -26,7 +27,38 @@ describe('Registry', () => {
     error = null;
   });
 
-  describe('registering and fetching', () => {
+  describe('bind()', () => {
+    describe('registering wrong type of instance', () => {
+      beforeEach(() => {
+        try {
+          registry.bind(DummyDependency, {} as DummyDependency);
+        } catch (err) {
+          error = err;
+        }
+      });
+
+      it('throws an error', () => {
+        expect(error).not.toBeNull();
+      });
+    });
+
+    describe('registering same type more than once', () => {
+      beforeEach(() => {
+        registry.bind(DummyDependency, new DummyDependency());
+        try {
+          registry.bind(DummyDependency, new DummyDependency())
+        } catch (err) {
+          error = err;
+        }
+      });
+
+      it('throws an error', () => {
+        expect(error).not.toBeNull();
+      });
+    });
+  });
+
+  describe('get()', () => {
     const dependency: DummyDependency = new DummyDependency();
     let result: DummyDependency|null = null;
 
@@ -58,41 +90,16 @@ describe('Registry', () => {
 
     describe('non-existent dependency', () => {
       beforeEach(() => {
-        result = registry.get(DummyDependency);
+        try {
+          result = registry.get(DummyDependency);
+        } catch (err) {
+          error = err;
+        }
       });
 
-      it('creates an instance', () => {
-        expect(result).toBeInstanceOf(DummyDependency);
+      it('throw an error', () => {
+        expect(error).not.toBeNull();
       });
-    });
-  });
-
-  describe('registering wrong type of instance', () => {
-    beforeEach(() => {
-      try {
-        registry.bind(DummyDependency, {} as DummyDependency);
-      } catch (err) {
-        error = err;
-      }
-    });
-
-    it('throws an error', () => {
-      expect(error).not.toBeNull();
-    });
-  });
-
-  describe('registering same type more than once', () => {
-    beforeEach(() => {
-      registry.bind(DummyDependency, new DummyDependency());
-      try {
-        registry.bind(DummyDependency, new DummyDependency())
-      } catch (err) {
-        error = err;
-      }
-    });
-
-    it('throws an error', () => {
-      expect(error).not.toBeNull();
     });
   });
 
@@ -113,10 +120,7 @@ describe('Registry', () => {
     });
 
     it('injects dependency into the instance', () => {
-      if (!result) {
-        throw new Error('result is null');
-      }
-      expect(result.dependency).toBe(dummyDependency);
+      expect(assertNotNull(result).dependency).toBe(dummyDependency);
     });
   });
 });
