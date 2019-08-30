@@ -1,6 +1,6 @@
 TypeScript/JavaScript dependency injection without decorators and reflection.
 
-## Usage
+## Full example
 
 ```typescript
 import { Registry, injectableClass, injectableFactory } from '@mtti/deps';
@@ -21,7 +21,7 @@ class BarDependency {
 }
 injectableClass(BarDependency, [ FooDependency ]);
 
-function createBar(FooDependency foo): BarDependency {
+async function createBar(FooDependency foo): Promise<BarDependency> {
     return new BarDependency(foo);
 }
 injectableFactory(createBar, [ FooDependency ]);
@@ -42,7 +42,9 @@ class MyService() {
 }
 injectableClass(MyService, [FooDependency, BarDependency]);
 
-const myService = registry.Resolve(MyService);
+(async () => {
+    const myService = await registry.resolve(MyService);
+})();
 ```
 
 ## Use as a service locator
