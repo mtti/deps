@@ -1,21 +1,34 @@
+import { injectable } from './injectable';
 import { Registry } from './registry';
 
 class ParentDependency {}
 
 class DummyDependency extends ParentDependency {}
 
+class InjectableDependency {
+  dependency: DummyDependency;
+
+  constructor(dependency: DummyDependency) {
+    this.dependency = dependency;
+  }
+}
+
+injectable(InjectableDependency, [ DummyDependency ]);
+
 describe('Registry', () => {
   let registry: Registry = new Registry();
   let error: Error|null = null;
+  let dummyDependency: DummyDependency = new DummyDependency();
 
   beforeEach(() => {
     registry = new Registry();
+    dummyDependency = new DummyDependency();
     error = null;
   });
 
   describe('registering and fetching', () => {
-    let result: DummyDependency|null = null;
     const dependency: DummyDependency = new DummyDependency();
+    let result: DummyDependency|null = null;
 
     beforeEach(() => {
       result = null;
@@ -40,6 +53,16 @@ describe('Registry', () => {
 
       it('returns the registered instance', () => {
         expect(result).toBe(dependency);
+      });
+    });
+
+    describe('non-existent dependency', () => {
+      beforeEach(() => {
+        result = registry.get(DummyDependency);
+      });
+
+      it('creates an instance', () => {
+        expect(result).toBeInstanceOf(DummyDependency);
       });
     });
   });
@@ -73,17 +96,27 @@ describe('Registry', () => {
     });
   });
 
-  describe('fetching non-existent dependency', () => {
+  describe('resolve()', () => {
+    let result: InjectableDependency|null = null;
+
     beforeEach(() => {
-      try {
-        registry.get(DummyDependency);
-      } catch (err) {
-        error = err;
-      }
+      result = null;
     });
 
-    it('throws an error', () => {
-      expect(error).not.toBeNull();
+    beforeEach(() => {
+      registry.bind(DummyDependency, dummyDependency);
+      result = registry.resolve(InjectableDependency);
+    });
+
+    it('successfully creates an instance', () => {
+      expect(result).not.toBeNull();
+    });
+
+    it('injects dependency into the instance', () => {
+      if (!result) {
+        throw new Error('result is null');
+      }
+      expect(result.dependency).toBe(dummyDependency);
     });
   });
 });
