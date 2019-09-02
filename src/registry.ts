@@ -1,42 +1,22 @@
-import { ArgumentTypesKey, DependencyIdKey } from './symbols';
+import { ArgumentTypesKey } from './symbols';
+import { resolveDependencyKey } from './utils';
 import {
-  FactoryDirectory,
+  DependencyKey,
   FactoryFunction,
   InjectableConstructor,
-  ServiceDirectory,
 } from './types';
 
 /**
  * Stores instances indexed by their type in a run-time type-safe fashion.
  */
 export class Registry {
-  private static _nextId = 0;
-
   /**
-   * Get the internal global dependency ID of a type, or assign it a new one
-   * if does not already have one.
-   *
-   * @param type
+   * Holds service instances keyed by their ID symbol. The type is `any` because
+   * TypeScript does not support indexing by symbol at the time of writing.
    */
-  private static getId<T>(type: InjectableConstructor<T>): string {
-    const existingKey = type[DependencyIdKey];
-    let result: string;
+  private _services: any = {};
 
-    if (existingKey) {
-      result = existingKey;
-    } else {
-      // eslint-disable-next-line no-underscore-dangle, no-plusplus
-      result = (Registry._nextId++).toString();
-      // eslint-disable-next-line no-param-reassign
-      type[DependencyIdKey] = result;
-    }
-
-    return result;
-  }
-
-  private _services: ServiceDirectory = {};
-
-  private _factories: FactoryDirectory = {};
+  private _factories: any = {};
 
   /**
    * Index a concrete object by its type.
@@ -44,15 +24,15 @@ export class Registry {
    * @param type The object's constructor/class
    * @param instance A concrete instance of `type`.
    */
-  bind<T>(type: InjectableConstructor<T>, instance: T): void {
-    const key = Registry.getId(type);
+  bind<T>(identity: DependencyKey<T>, instance: T): void {
+    const key = resolveDependencyKey(identity);
 
-    if (!(instance instanceof type)) {
-      throw new Error(`Implementation is not an instance of ${type.name}`);
+    if (typeof identity !== 'symbol' && !(instance instanceof identity)) {
+      throw new Error(`Trying to bind instance which is not a ${identity.name}`);
     }
 
     if (this._services[key]) {
-      throw new Error(`Already bound: ${type.name}`);
+      throw new Error(`Already bound: ${key.toString()}`);
     }
 
     this._services[key] = instance;
@@ -64,17 +44,17 @@ export class Registry {
    *
    * @param type The object's type
    */
-  get<T>(type: InjectableConstructor<T>): T {
-    const key = Registry.getId(type);
+  get<T>(identity: DependencyKey<T>): T {
+    const key = resolveDependencyKey(identity);
 
     if (!this._services[key]) {
-      throw new Error(`Not found: ${type.name}`);
+      throw new Error(`Not found: ${identity.toString()}`);
     }
 
     const instance: unknown = this._services[key];
 
-    if (!(instance instanceof type)) {
-      throw new Error(`Registered instance is not a ${type.name}`);
+    if (typeof identity !== 'symbol' && !(instance instanceof identity)) {
+      throw new Error(`Bound instance is not a ${identity.name}`);
     }
 
     return instance as T;
@@ -86,10 +66,10 @@ export class Registry {
    * @param factory
    */
   addFactory<T>(
-    type: InjectableConstructor<T>,
+    identity: DependencyKey<T>,
     factory: FactoryFunction<T>,
   ): void {
-    const key = Registry.getId(type);
+    const key = resolveDependencyKey(identity);
     this._factories[key] = factory;
   }
 
@@ -106,21 +86,25 @@ export class Registry {
   }
 
   private async _resolve<T>(
-    type: InjectableConstructor<T>,
-    stack: string[],
+    identity: DependencyKey<T>,
+    stack: symbol[],
   ): Promise<T> {
-    const key = Registry.getId(type);
+    const key = resolveDependencyKey(identity);
     let result: unknown;
 
     if (stack.includes(key)) {
-      throw new Error(`Circular dependency detected: ${type.name}`);
+      throw new Error(`Circular dependency detected: ${key.toString()}`);
     }
     stack.push(key);
 
     if (this._services[key]) {
+      // Return existing instance
+
       result = this._services[key];
     } else if (this._factories[key]) {
-      const factory = this._factories[key];
+      // Create new instance with factory function
+
+      const factory = this._factories[key] as FactoryFunction<unknown>;
 
       const argTypes = factory[ArgumentTypesKey] || [];
       const args: unknown[] = await Promise.all(
@@ -128,22 +112,25 @@ export class Registry {
       );
 
       result = await factory(...args);
-      this.bind(type, result);
-    } else {
-      const argTypes = type[ArgumentTypesKey] || [];
+      this.bind(key, result);
+    } else if (typeof identity !== 'symbol') {
+      // Create new instance with constructor
+      const argTypes = identity[ArgumentTypesKey] || [];
       const args: unknown[] = await Promise.all(
         argTypes.map((argType) => this._resolve(argType, stack)),
       );
 
       // eslint-disable-next-line new-cap
-      result = new type(...args);
-      this.bind(type, result);
+      result = new identity(...args);
+      this.bind(key, result);
+    } else {
+      throw new Error(`Unresolvable dependency: ${key.toString()}`);
     }
 
-    if (!(result instanceof type)) {
-      throw new Error(`Resolved to an incompatible instance: ${type.name}`);
+    if (typeof identity !== 'symbol' && !(result instanceof identity)) {
+      throw new Error(`Resolved to an incompatible instance: ${identity.name}`);
     }
 
-    return result;
+    return result as T;
   }
 }
