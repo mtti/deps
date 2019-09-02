@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 
 import { ArgumentTypesKey } from './symbols';
-import { FactoryFunction, InjectableConstructor } from './types';
+import { DependencyKey, FactoryFunction, InjectableConstructor } from './types';
 
 /**
  * "Decorate" a class with runtime type information needed to resolve its
@@ -17,7 +17,7 @@ import { FactoryFunction, InjectableConstructor } from './types';
  */
 export function injectableClass<T>(
   type: InjectableConstructor<T>,
-  argTypes: InjectableConstructor<any>[],
+  argTypes: DependencyKey<any>[],
 ): InjectableConstructor<T> {
   type[ArgumentTypesKey] = [...argTypes];
   return type;
@@ -38,7 +38,7 @@ export function injectableClass<T>(
  */
 export function injectableFactory<T>(
   factory: FactoryFunction<T>,
-  argTypes: InjectableConstructor<any>[],
+  argTypes: DependencyKey<any>[],
 ): FactoryFunction<T> {
   factory[ArgumentTypesKey] = [...argTypes];
   return factory;
