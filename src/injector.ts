@@ -9,7 +9,7 @@ import {
 /**
  * Stores instances indexed by their type in a run-time type-safe fashion.
  */
-export class Registry {
+export class Injector {
   /**
    * Holds service instances keyed by their ID symbol. The type is `any` because
    * TypeScript does not support indexing by symbol at the time of writing.

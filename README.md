@@ -3,7 +3,7 @@ TypeScript/JavaScript dependency injection without decorators and reflection.
 ## Full example
 
 ```typescript
-import { Registry, injectableClass, injectableFactory } from '@mtti/deps';
+import { Injector, injectableClass, injectableFactory } from '@mtti/deps';
 
 // A simple service with no dependencies of its own
 
@@ -26,8 +26,8 @@ async function createBar(FooDependency foo): Promise<BarDependency> {
 }
 injectableFactory(createBar, [ FooDependency ]);
 
-const registry = new Registry();
-registry.addFactory(BarDependency, createBar);
+const injector = new Injector();
+injector.addFactory(BarDependency, createBar);
 
 // A service which depends on both Foo and Bar
 
@@ -43,7 +43,7 @@ class MyService() {
 injectableClass(MyService, [FooDependency, BarDependency]);
 
 (async () => {
-    const myService = await registry.resolve(MyService);
+    const myService = await injector.resolve(MyService);
 })();
 ```
 
@@ -52,17 +52,17 @@ injectableClass(MyService, [FooDependency, BarDependency]);
 You can add and retrieve services manually:
 
 ```typescript
-import { Registry } from '@mtti/deps';
+import { Injector } from '@mtti/deps';
 
 // Define a dependency
 class MyService {}
 
-// Create a registry
-const registry = new Registry();
+// Create an injector
+const injector = new Injector();
 
 // Bind an instance of MyService
-registry.bind(MyService, new MyService());
+injector.bind(MyService, new MyService());
 
 // The created instace can now be retrieved with
-const myService: MyService = registry.get(MyService);
+const myService: MyService = injector.get(MyService);
 ```

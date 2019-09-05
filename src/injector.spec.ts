@@ -1,6 +1,6 @@
 /* eslint-disable max-classes-per-file */
 
-import { Registry } from './registry';
+import { Injector } from './injector';
 import { assertNotNull, resolveDependencyKey } from './utils';
 import { injectableClass, injectableFactory } from './injectable';
 
@@ -42,13 +42,13 @@ async function createCircularA(dep: CircularB): Promise<CircularA> {
 }
 injectableFactory(createCircularA, [CircularB]);
 
-describe('Registry', () => {
-  let registry: Registry = new Registry();
+describe('Injector', () => {
+  let injector: Injector = new Injector();
   let error: Error|null = null;
   let dummyDependency: DummyDependency = new DummyDependency();
 
   beforeEach(() => {
-    registry = new Registry();
+    injector = new Injector();
     dummyDependency = new DummyDependency();
     error = null;
   });
@@ -58,7 +58,7 @@ describe('Registry', () => {
       describe('registering wrong type of instance', () => {
         beforeEach(() => {
           try {
-            registry.bind(DummyDependency, {} as DummyDependency);
+            injector.bind(DummyDependency, {} as DummyDependency);
           } catch (err) {
             error = err;
           }
@@ -71,9 +71,9 @@ describe('Registry', () => {
 
       describe('registering same type more than once', () => {
         beforeEach(() => {
-          registry.bind(DummyDependency, new DummyDependency());
+          injector.bind(DummyDependency, new DummyDependency());
           try {
-            registry.bind(DummyDependency, new DummyDependency());
+            injector.bind(DummyDependency, new DummyDependency());
           } catch (err) {
             error = err;
           }
@@ -90,9 +90,9 @@ describe('Registry', () => {
 
       describe('registering same key', () => {
         beforeEach(() => {
-          registry.bind(key, new DummyDependency());
+          injector.bind(key, new DummyDependency());
           try {
-            registry.bind(key, new DummyDependency());
+            injector.bind(key, new DummyDependency());
           } catch (err) {
             error = err;
           }
@@ -115,8 +115,8 @@ describe('Registry', () => {
 
     describe('with the same type', () => {
       beforeEach(() => {
-        registry.bind(DummyDependency, dependency);
-        result = registry.get(DummyDependency);
+        injector.bind(DummyDependency, dependency);
+        result = injector.get(DummyDependency);
       });
 
       it('returns the previously bound instance', () => {
@@ -128,8 +128,8 @@ describe('Registry', () => {
       const key = Symbol('dummy key');
 
       beforeEach(() => {
-        registry.bind(key, dependency);
-        result = registry.get<DummyDependency>(key);
+        injector.bind(key, dependency);
+        result = injector.get<DummyDependency>(key);
       });
 
       it('returns the previously bound instance', () => {
@@ -139,8 +139,8 @@ describe('Registry', () => {
 
     describe('with superclass', () => {
       beforeEach(() => {
-        registry.bind(ParentDependency, dependency);
-        result = registry.get(ParentDependency);
+        injector.bind(ParentDependency, dependency);
+        result = injector.get(ParentDependency);
       });
 
       it('returns the previously bound instance', () => {
@@ -151,7 +151,7 @@ describe('Registry', () => {
     describe('non-existent type', () => {
       beforeEach(() => {
         try {
-          result = registry.get(DummyDependency);
+          result = injector.get(DummyDependency);
         } catch (err) {
           error = err;
         }
@@ -165,7 +165,7 @@ describe('Registry', () => {
     describe('non-existent symbol', () => {
       beforeEach(() => {
         try {
-          result = registry.get(Symbol('dummy'));
+          result = injector.get(Symbol('dummy'));
         } catch (err) {
           error = err;
         }
@@ -179,9 +179,9 @@ describe('Registry', () => {
     describe('bound to wrong type', () => {
       beforeEach(() => {
         const key = resolveDependencyKey(DummyDependency);
-        registry.bind(key, {} as DummyDependency);
+        injector.bind(key, {} as DummyDependency);
         try {
-          result = registry.get(DummyDependency);
+          result = injector.get(DummyDependency);
         } catch (err) {
           error = err;
         }
@@ -201,8 +201,8 @@ describe('Registry', () => {
       });
 
       beforeEach(async () => {
-        registry.bind(DummyDependency, dummyDependency);
-        result = await registry.resolve(DummyTargetService);
+        injector.bind(DummyDependency, dummyDependency);
+        result = await injector.resolve(DummyTargetService);
       });
 
       it('successfully creates an instance', () => {
@@ -228,11 +228,11 @@ describe('Registry', () => {
           createdDependency = new DummyDependency();
           return createdDependency;
         };
-        registry.addFactory(DummyDependency, factory);
+        injector.addFactory(DummyDependency, factory);
       });
 
       beforeEach(async () => {
-        result = await registry.resolve(DummyTargetService);
+        result = await injector.resolve(DummyTargetService);
       });
 
       it('successfully creates an instance', () => {
@@ -247,7 +247,7 @@ describe('Registry', () => {
     describe('with an unresolvable dependency', () => {
       beforeEach(async () => {
         try {
-          await registry.resolve(HasUnresolvableDependency);
+          await injector.resolve(HasUnresolvableDependency);
         } catch (err) {
           error = err;
         }
@@ -262,8 +262,8 @@ describe('Registry', () => {
     describe('with circular dependency', () => {
       beforeEach(async () => {
         try {
-          registry.addFactory(CircularA, createCircularA);
-          await registry.resolve(CircularB);
+          injector.addFactory(CircularA, createCircularA);
+          await injector.resolve(CircularB);
         } catch (err) {
           error = err;
         }
