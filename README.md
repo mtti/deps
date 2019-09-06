@@ -3,7 +3,7 @@ TypeScript/JavaScript dependency injection without decorators and reflection.
 ## Full example
 
 ```typescript
-import { Injector, injectableClass, injectableFactory } from '@mtti/deps';
+import { Injector, injectClass, injectFunction } from '@mtti/deps';
 
 // A simple service with no dependencies of its own
 
@@ -19,15 +19,15 @@ class BarDependency {
         this._foo = foo;
     }
 }
-injectableClass(BarDependency, [ FooDependency ]);
+injectClass([FooDependency], BarDependency);
 
 async function createBar(FooDependency foo): Promise<BarDependency> {
     return new BarDependency(foo);
 }
-injectableFactory(createBar, [ FooDependency ]);
+injectFunction([FooDependency], createBar);
 
 const injector = new Injector();
-injector.addFactory(BarDependency, createBar);
+injector.provide(BarDependency, createBar);
 
 // A service which depends on both Foo and Bar
 
@@ -40,7 +40,7 @@ class MyService() {
         this._bar = bar;
     }
 }
-injectableClass(MyService, [FooDependency, BarDependency]);
+injectClass([FooDependency, BarDependency], MyService);
 
 (async () => {
     const myService = await injector.resolve(MyService);

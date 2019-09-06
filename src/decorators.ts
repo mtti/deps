@@ -15,9 +15,9 @@ import { DependencyKey, FactoryFunction, InjectableConstructor } from './types';
  * @param type The type to add argument type information to.
  * @param argTypes Types of the dependencies to be injected.
  */
-export function injectableClass<T>(
-  type: InjectableConstructor<T>,
+export function injectClass<T>(
   argTypes: DependencyKey<any>[],
+  type: InjectableConstructor<T>,
 ): InjectableConstructor<T> {
   type[ArgumentTypesKey] = [...argTypes];
   return type;
@@ -36,9 +36,9 @@ export function injectableClass<T>(
  * @param factory
  * @param argTypes
  */
-export function injectableFactory<T>(
-  factory: FactoryFunction<T>,
+export function injectFunction<T>(
   argTypes: DependencyKey<any>[],
+  factory: FactoryFunction<T>,
 ): FactoryFunction<T> {
   factory[ArgumentTypesKey] = [...argTypes];
   return factory;

@@ -2,7 +2,7 @@
 
 import { Injector } from './injector';
 import { assertNotNull, resolveDependencyKey } from './utils';
-import { injectableClass, injectableFactory } from './injectable';
+import { injectClass, injectFunction } from './decorators';
 
 class ParentDependency {}
 
@@ -15,7 +15,7 @@ class DummyTargetService {
     this.dependency = dependency;
   }
 }
-injectableClass(DummyTargetService, [DummyDependency]);
+injectClass([DummyDependency], DummyTargetService);
 
 class HasUnresolvableDependency {
   dependency: DummyDependency;
@@ -24,7 +24,7 @@ class HasUnresolvableDependency {
     this.dependency = dependency;
   }
 }
-injectableClass(HasUnresolvableDependency, [Symbol('unresolvable')]);
+injectClass([Symbol('unresolvable')], HasUnresolvableDependency);
 
 class CircularA {}
 
@@ -35,12 +35,12 @@ class CircularB {
     this.dep = dep;
   }
 }
-injectableClass(CircularB, [CircularA]);
+injectClass([CircularA], CircularB);
 
 async function createCircularA(dep: CircularB): Promise<CircularA> {
   return new CircularA();
 }
-injectableFactory(createCircularA, [CircularB]);
+injectFunction([CircularB], createCircularA);
 
 describe('Injector', () => {
   let injector: Injector = new Injector();
@@ -228,7 +228,7 @@ describe('Injector', () => {
           createdDependency = new DummyDependency();
           return createdDependency;
         };
-        injector.addFactory(DummyDependency, factory);
+        injector.provide(DummyDependency, factory);
       });
 
       beforeEach(async () => {
@@ -262,7 +262,7 @@ describe('Injector', () => {
     describe('with circular dependency', () => {
       beforeEach(async () => {
         try {
-          injector.addFactory(CircularA, createCircularA);
+          injector.provide(CircularA, createCircularA);
           await injector.resolve(CircularB);
         } catch (err) {
           error = err;
