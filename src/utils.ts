@@ -16,6 +16,12 @@ export function assertNotNull<T>(value: T|null): T {
   return value;
 }
 
+/**
+ * Get a dependency key symbol when given either a symbol or an injectable
+ * type.
+ *
+ * @param source Dependency key source to resolve
+ */
 export function resolveDependencyKey(source: DependencyKey<unknown>): symbol {
   if (typeof source === 'symbol') {
     return source;

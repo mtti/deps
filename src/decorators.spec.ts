@@ -3,7 +3,7 @@
 import { ArgumentTypesKey } from './symbols';
 import { assertNotNull } from './utils';
 import { FactoryFunction, InjectableConstructor } from './types';
-import { injectableClass, injectableFactory } from './injectable';
+import { injectClass, injectFunction } from './decorators';
 
 class FirstDummyDependency {}
 
@@ -41,9 +41,9 @@ describe('decorators', () => {
     });
 
     beforeEach(() => {
-      injectableClass(
-        assertNotNull(targetType),
+      injectClass(
         [FirstDummyDependency, SecondDummyDependency],
+        assertNotNull(targetType),
       );
     });
 
@@ -65,9 +65,9 @@ describe('decorators', () => {
     });
 
     beforeEach(() => {
-      injectableFactory(
-        assertNotNull(targetFunction),
+      injectFunction(
         [FirstDummyDependency, SecondDummyDependency],
+        assertNotNull(targetFunction),
       );
     });
 

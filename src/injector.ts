@@ -61,11 +61,11 @@ export class Injector {
   }
 
   /**
-   * Register function `factory` as the source of `type` instances.
+   * Register function `factory` as the source of `identity` instances.
    * @param type
    * @param factory
    */
-  addFactory<T>(
+  provide<T>(
     identity: DependencyKey<T>,
     factory: FactoryFunction<T>,
   ): void {
