@@ -214,6 +214,29 @@ describe('Injector', () => {
       });
     });
 
+    describe('with a service bound to a symbol', () => {
+      const expected = new DummyDependency();
+      let result: DummyDependency|null = null;
+      const key = Symbol('dummy dependency key');
+
+      beforeEach(() => {
+        result = null;
+      });
+
+      beforeEach(async () => {
+        injector.bind(key, expected);
+        result = await injector.resolve(key);
+      });
+
+      it('successfully creates an instance', () => {
+        expect(result).not.toBeNull();
+      });
+
+      it('returns the instace that was bound', () => {
+        expect(assertNotNull(result)).toBe(expected);
+      });
+    });
+
     describe('with a dependency from a factory function', () => {
       let result: DummyTargetService|null = null;
       let createdDependency: DummyDependency|null = null;

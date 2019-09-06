@@ -1,10 +1,6 @@
 import { ArgumentTypesKey } from './symbols';
 import { resolveDependencyKey } from './utils';
-import {
-  DependencyKey,
-  FactoryFunction,
-  InjectableConstructor,
-} from './types';
+import { DependencyKey, FactoryFunction } from './types';
 
 /**
  * Stores instances indexed by their type in a run-time type-safe fashion.
@@ -81,8 +77,8 @@ export class Injector {
    * @param extraArgs Extra arguments to pass to the constructor after the
    *   injected dependencies.
    */
-  async resolve<T>(type: InjectableConstructor<T>): Promise<T> {
-    return this._resolve(type, []);
+  async resolve<T>(identity: DependencyKey<T>): Promise<T> {
+    return this._resolve(identity, []);
   }
 
   private async _resolve<T>(
