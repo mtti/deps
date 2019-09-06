@@ -1,3 +1,5 @@
+[![npm version](https://badge.fury.io/js/%40mtti%2Fdeps.svg)](https://badge.fury.io/js/%40mtti%2Fdeps) [![Build Status](https://travis-ci.org/mtti/deps.svg?branch=master)](https://travis-ci.org/mtti/deps)
+
 TypeScript/JavaScript dependency injection without decorators and reflection.
 
 ## Full example
