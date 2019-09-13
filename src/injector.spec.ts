@@ -2,7 +2,7 @@
 
 import { Injector } from './injector';
 import { assertNotNull, resolveDependencyKey } from './utils';
-import { injectClass, injectFactory } from './decorators';
+import { injectClass, injectFunction } from './decorators';
 
 class ParentDependency {}
 
@@ -41,7 +41,7 @@ injectClass([CircularA], CircularB);
 async function createCircularA(dep: CircularB): Promise<CircularA> {
   return new CircularA();
 }
-injectFactory([CircularB], createCircularA);
+injectFunction([CircularB], createCircularA);
 
 describe('Injector', () => {
   let injector: Injector = new Injector();

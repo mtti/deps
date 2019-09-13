@@ -1,5 +1,5 @@
 import { ArgumentTypesKey } from './symbols';
-import { DependencyKey, FactoryFunction } from './types';
+import { CallableDependency, DependencyKey } from './types';
 import { isConstructable, resolveDependencyKey } from './utils';
 
 /**
@@ -58,12 +58,13 @@ export class Injector {
 
   /**
    * Register function `factory` as the source of `identity` instances.
+   *
    * @param type
    * @param factory
    */
   provide<T>(
     identity: DependencyKey<T>,
-    factory: FactoryFunction<T>,
+    factory: CallableDependency<T>,
   ): void {
     const key = resolveDependencyKey(identity);
     this._factories[key] = factory;
@@ -98,7 +99,7 @@ export class Injector {
       result = this._services[key];
     } else if (this._factories[key]) {
       // Create new instance with factory function
-      const factory = this._factories[key] as FactoryFunction<unknown>;
+      const factory = this._factories[key] as CallableDependency<unknown>;
 
       const argTypes = factory[ArgumentTypesKey] || [];
       const args: unknown[] = await Promise.all(

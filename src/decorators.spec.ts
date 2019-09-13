@@ -2,8 +2,8 @@
 
 import { ArgumentTypesKey } from './symbols';
 import { assertNotNull } from './utils';
-import { ClassDependency, FactoryFunction } from './types';
-import { injectClass, injectFactory } from './decorators';
+import { CallableDependency, ClassDependency } from './types';
+import { injectClass, injectFunction } from './decorators';
 
 class FirstDummyDependency {}
 
@@ -55,7 +55,7 @@ describe('decorators', () => {
   });
 
   describe('injectFactory()', () => {
-    let targetFunction: FactoryFunction<unknown>|null;
+    let targetFunction: CallableDependency<unknown>|null;
 
     beforeEach(() => {
       targetFunction = async (
@@ -65,7 +65,7 @@ describe('decorators', () => {
     });
 
     beforeEach(() => {
-      injectFactory(
+      injectFunction(
         [FirstDummyDependency, SecondDummyDependency],
         assertNotNull(targetFunction),
       );

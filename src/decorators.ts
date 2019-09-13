@@ -5,7 +5,6 @@ import {
   CallableDependency,
   ClassDependency,
   DependencyKey,
-  FactoryFunction,
 } from './types';
 
 /**
@@ -30,37 +29,23 @@ export function injectClass<T>(
 }
 
 /**
- * Mark a function as a callable dependency.
+ * Mark a function as a callable dependency. When the dependency is being
+ * resolved, the callable dependency is called and should return a promise
+ * resolving to the actual concrete instance.
+ *
+ * A secondary use is as factory functions that can provide a completely
+ * different type when added to an injector with `injector.provide()`.
+ *
+ * This modifies the original `target`.
  *
  * @param argTypes
  * @param target
  */
-export function injectCallable<T>(
+export function injectFunction<T>(
   argTypes: DependencyKey<any>[],
   target: CallableDependency<T>,
 ): CallableDependency<T> {
   target[ArgumentTypesKey] = [...argTypes];
   target[IsConstructableKey] = false;
-  return target;
-}
-
-/**
- * "Decorate" a factory function with runtime type information needed to
- * resolve its dependencies during dependency injection.
- *
- * This modifies the original `factory`.
- *
- * Internally, this creates a symbol-keyed property on the target function which
- * contains an array of argument types.
- *
- * @param type
- * @param factory
- * @param argTypes
- */
-export function injectFactory<T>(
-  argTypes: DependencyKey<any>[],
-  target: FactoryFunction<T>,
-): FactoryFunction<T> {
-  target[ArgumentTypesKey] = [...argTypes];
   return target;
 }
