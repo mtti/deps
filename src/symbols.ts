@@ -1,5 +1,5 @@
-export const ServiceAnnotation = Symbol('@mtti/deps service annotation');
+export const ArgumentTypesKey = Symbol('ArgumentTypesKey');
 
-export const DependencyIdKey = Symbol('@mtti/deps dependency ID key');
+export const DependencyIdKey = Symbol('DependencyIdKey');
 
-export const ArgumentTypesKey = Symbol('@mtti/deps argument types key');
+export const IsConstructableKey = Symbol('IsConstructableKey');

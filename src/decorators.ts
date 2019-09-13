@@ -1,7 +1,11 @@
 /* eslint-disable no-param-reassign */
 
-import { ArgumentTypesKey } from './symbols';
-import { DependencyKey, FactoryFunction, InjectableConstructor } from './types';
+import { ArgumentTypesKey, IsConstructableKey } from './symbols';
+import {
+  CallableDependency,
+  ClassDependency,
+  DependencyKey,
+} from './types';
 
 /**
  * "Decorate" a class with runtime type information needed to resolve its
@@ -17,29 +21,31 @@ import { DependencyKey, FactoryFunction, InjectableConstructor } from './types';
  */
 export function injectClass<T>(
   argTypes: DependencyKey<any>[],
-  type: InjectableConstructor<T>,
-): InjectableConstructor<T> {
-  type[ArgumentTypesKey] = [...argTypes];
-  return type;
+  target: ClassDependency<T>,
+): ClassDependency<T> {
+  target[ArgumentTypesKey] = [...argTypes];
+  target[IsConstructableKey] = true;
+  return target;
 }
 
 /**
- * "Decorate" a factory function with runtime type information needed to
- * resolve its dependencies during dependency injection.
+ * Mark a function as a callable dependency. When the dependency is being
+ * resolved, the callable dependency is called and should return a promise
+ * resolving to the actual concrete instance.
  *
- * This modifies the original `factory`.
+ * A secondary use is as factory functions that can provide a completely
+ * different type when added to an injector with `injector.provide()`.
  *
- * Internally, this creates a symbol-keyed property on the target function which
- * contains an array of argument types.
+ * This modifies the original `target`.
  *
- * @param type
- * @param factory
  * @param argTypes
+ * @param target
  */
 export function injectFunction<T>(
   argTypes: DependencyKey<any>[],
-  factory: FactoryFunction<T>,
-): FactoryFunction<T> {
-  factory[ArgumentTypesKey] = [...argTypes];
-  return factory;
+  target: CallableDependency<T>,
+): CallableDependency<T> {
+  target[ArgumentTypesKey] = [...argTypes];
+  target[IsConstructableKey] = false;
+  return target;
 }

@@ -1,6 +1,6 @@
 import { ArgumentTypesKey } from './symbols';
-import { resolveDependencyKey } from './utils';
-import { DependencyKey, FactoryFunction } from './types';
+import { CallableDependency, DependencyKey } from './types';
+import { isConstructable, resolveDependencyKey } from './utils';
 
 /**
  * Stores instances indexed by their type in a run-time type-safe fashion.
@@ -58,12 +58,13 @@ export class Injector {
 
   /**
    * Register function `factory` as the source of `identity` instances.
+   *
    * @param type
    * @param factory
    */
   provide<T>(
     identity: DependencyKey<T>,
-    factory: FactoryFunction<T>,
+    factory: CallableDependency<T>,
   ): void {
     const key = resolveDependencyKey(identity);
     this._factories[key] = factory;
@@ -78,7 +79,53 @@ export class Injector {
    *   injected dependencies.
    */
   async resolve<T>(identity: DependencyKey<T>): Promise<T> {
-    return this._resolve(identity, []);
+    return this._resolve<T>(identity, []);
+  }
+
+  /**
+   * Return a previously bound instance if one exists, or if not, call a
+   * function to create an instance then bind and return that.
+   *
+   * @param key
+   * @param source
+   */
+  private async _upsert<T>(key: symbol, source: () => Promise<T>): Promise<T> {
+    await (async (): Promise<void> => {})();
+
+    if (this._services[key]) {
+      return this._services[key];
+    }
+
+    const result: T = await source();
+    this.bind(key, result);
+
+    return result;
+  }
+
+  /**
+   * Resolve a list of dependencies.
+   *
+   * @param argTypes
+   * @param stack
+   */
+  private async _resolveArguments(
+    argTypes: DependencyKey<unknown>[]|undefined,
+    stack: symbol[],
+  ): Promise<unknown[]> {
+    // ESLint rules are disabled to resolve arguments one-by-one to avoid
+    // instances being created twice dues to async timings
+
+    if (!argTypes) {
+      return [];
+    }
+
+    const result: unknown[] = [];
+    // eslint-disable-next-line no-restricted-syntax
+    for (const item of argTypes) {
+      // eslint-disable-next-line no-await-in-loop
+      result.push(await this._resolve(item, stack));
+    }
+    return result;
   }
 
   private async _resolve<T>(
@@ -89,41 +136,50 @@ export class Injector {
     let result: unknown;
 
     if (stack.includes(key)) {
-      throw new Error(`Circular dependency detected: ${key.toString()}`);
+      const keys = [...stack, key].map((item) => item.toString());
+      throw new Error(`Circular dependency detected: ${keys.join(' <- ')}`);
     }
-    stack.push(key);
+    const newStack = [...stack, key];
 
     if (this._services[key]) {
       // Return existing instance
-
       result = this._services[key];
     } else if (this._factories[key]) {
       // Create new instance with factory function
 
-      const factory = this._factories[key] as FactoryFunction<unknown>;
-
-      const argTypes = factory[ArgumentTypesKey] || [];
-      const args: unknown[] = await Promise.all(
-        argTypes.map((argType) => this._resolve(argType, stack)),
+      const factory = this._factories[key] as CallableDependency<unknown>;
+      const args: unknown[] = await this._resolveArguments(
+        factory[ArgumentTypesKey],
+        newStack,
       );
 
-      result = await factory(...args);
-      this.bind(key, result);
+      result = await this._upsert(key, async () => factory(...args));
     } else if (typeof identity !== 'symbol') {
-      // Create new instance with constructor
-      const argTypes = identity[ArgumentTypesKey] || [];
-      const args: unknown[] = await Promise.all(
-        argTypes.map((argType) => this._resolve(argType, stack)),
-      );
+      if (isConstructable(identity)) {
+        // Create new instance with constructor
 
-      // eslint-disable-next-line new-cap
-      result = new identity(...args);
-      this.bind(key, result);
+        const args: unknown[] = await this._resolveArguments(
+          identity[ArgumentTypesKey],
+          newStack,
+        );
+
+        // eslint-disable-next-line new-cap
+        result = await this._upsert(key, async () => new identity(...args));
+      } else {
+        // Create instance from a callable
+
+        const args: unknown[] = await this._resolveArguments(
+          identity[ArgumentTypesKey],
+          newStack,
+        );
+
+        result = await this._upsert(key, async () => identity(...args));
+      }
     } else {
       throw new Error(`Unresolvable dependency: ${key.toString()}`);
     }
 
-    if (typeof identity !== 'symbol' && !(result instanceof identity)) {
+    if (isConstructable(identity) && !(result instanceof identity)) {
       throw new Error(`Resolved to an incompatible instance: ${identity.name}`);
     }
 

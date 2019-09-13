@@ -1,5 +1,5 @@
-import { DependencyIdKey } from './symbols';
-import { DependencyKey } from './types';
+import { ClassDependency, DependencyKey } from './types';
+import { DependencyIdKey, IsConstructableKey } from './symbols';
 
 /**
  * Throws an error if `value === null`, returns `value` otherwise. Useful
@@ -32,8 +32,22 @@ export function resolveDependencyKey(source: DependencyKey<unknown>): symbol {
     return existingKey;
   }
 
-  const newKey = Symbol(`${source.name} dependency key`);
+  const newKey = Symbol(source.name);
   // eslint-disable-next-line no-param-reassign
   source[DependencyIdKey] = newKey;
   return newKey;
+}
+
+/**
+ * Check if a dependency key is marked as constructable.
+ *
+ * @param target
+ */
+export function isConstructable<T>(
+  target: DependencyKey<T>,
+): target is ClassDependency<T> {
+  if (typeof target === 'symbol') {
+    return false;
+  }
+  return target[IsConstructableKey] === true;
 }

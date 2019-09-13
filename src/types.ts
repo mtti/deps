@@ -1,20 +1,24 @@
-import { ArgumentTypesKey, DependencyIdKey } from './symbols';
-
-/**
- * Factory function with dependency injection metadata.
- */
-export interface FactoryFunction<T> extends Function {
-  [ArgumentTypesKey]?: DependencyKey<unknown>[];
-  (...args: any[]): Promise<T>;
-}
+import { ArgumentTypesKey, DependencyIdKey, IsConstructableKey } from './symbols';
 
 /**
  * Constructor function with dependency injection metadata.
  */
-export interface InjectableConstructor<T> extends Function {
+export interface ClassDependency<T> extends Function {
   [DependencyIdKey]?: symbol;
   [ArgumentTypesKey]?: DependencyKey<unknown>[];
+  [IsConstructableKey]?: boolean;
   new (...args: any[]): T;
 }
 
-export type DependencyKey<T> = InjectableConstructor<T> | symbol;
+/**
+ * A function with dependency injector metadata.
+ */
+export interface CallableDependency<T> extends Function {
+  [DependencyIdKey]?: symbol;
+  [ArgumentTypesKey]?: DependencyKey<unknown>[];
+  [IsConstructableKey]?: boolean;
+  (...args: any[]): Promise<T>;
+}
+
+export type DependencyKey<T>
+  = ClassDependency<T> | CallableDependency<T> | symbol;
