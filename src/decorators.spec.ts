@@ -2,8 +2,8 @@
 
 import { ArgumentTypesKey } from './symbols';
 import { assertNotNull } from './utils';
-import { FactoryFunction, InjectableConstructor } from './types';
-import { injectClass, injectFunction } from './decorators';
+import { ClassDependency, FactoryFunction } from './types';
+import { injectClass, injectFactory } from './decorators';
 
 class FirstDummyDependency {}
 
@@ -22,7 +22,7 @@ class DummyResult {
 
 describe('decorators', () => {
   describe('injectableClass()', () => {
-    let targetType: InjectableConstructor<unknown>|null = null;
+    let targetType: ClassDependency<unknown>|null = null;
 
     beforeEach(() => {
       targetType = class {
@@ -54,7 +54,7 @@ describe('decorators', () => {
     });
   });
 
-  describe('injectableFactory()', () => {
+  describe('injectFactory()', () => {
     let targetFunction: FactoryFunction<unknown>|null;
 
     beforeEach(() => {
@@ -65,7 +65,7 @@ describe('decorators', () => {
     });
 
     beforeEach(() => {
-      injectFunction(
+      injectFactory(
         [FirstDummyDependency, SecondDummyDependency],
         assertNotNull(targetFunction),
       );

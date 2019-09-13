@@ -1,6 +1,6 @@
 import { ArgumentTypesKey } from './symbols';
-import { resolveDependencyKey } from './utils';
 import { DependencyKey, FactoryFunction } from './types';
+import { isConstructable, resolveDependencyKey } from './utils';
 
 /**
  * Stores instances indexed by their type in a run-time type-safe fashion.
@@ -78,7 +78,7 @@ export class Injector {
    *   injected dependencies.
    */
   async resolve<T>(identity: DependencyKey<T>): Promise<T> {
-    return this._resolve(identity, []);
+    return this._resolve<T>(identity, []);
   }
 
   private async _resolve<T>(
@@ -95,11 +95,9 @@ export class Injector {
 
     if (this._services[key]) {
       // Return existing instance
-
       result = this._services[key];
     } else if (this._factories[key]) {
       // Create new instance with factory function
-
       const factory = this._factories[key] as FactoryFunction<unknown>;
 
       const argTypes = factory[ArgumentTypesKey] || [];
@@ -110,20 +108,31 @@ export class Injector {
       result = await factory(...args);
       this.bind(key, result);
     } else if (typeof identity !== 'symbol') {
-      // Create new instance with constructor
-      const argTypes = identity[ArgumentTypesKey] || [];
-      const args: unknown[] = await Promise.all(
-        argTypes.map((argType) => this._resolve(argType, stack)),
-      );
+      if (isConstructable(identity)) {
+        // Create new instance with constructor
+        const argTypes = identity[ArgumentTypesKey] || [];
+        const args: unknown[] = await Promise.all(
+          argTypes.map((argType) => this._resolve(argType, stack)),
+        );
 
-      // eslint-disable-next-line new-cap
-      result = new identity(...args);
-      this.bind(key, result);
+        // eslint-disable-next-line new-cap
+        result = new identity(...args);
+        this.bind(key, result);
+      } else {
+        // Create new instance with factory function
+        const argTypes = identity[ArgumentTypesKey] || [];
+        const args: unknown[] = await Promise.all(
+          argTypes.map((argType) => this._resolve(argType, stack)),
+        );
+
+        result = await identity(...args);
+        this.bind(key, result);
+      }
     } else {
       throw new Error(`Unresolvable dependency: ${key.toString()}`);
     }
 
-    if (typeof identity !== 'symbol' && !(result instanceof identity)) {
+    if (isConstructable(identity) && !(result instanceof identity)) {
       throw new Error(`Resolved to an incompatible instance: ${identity.name}`);
     }
 

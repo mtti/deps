@@ -1,7 +1,12 @@
 /* eslint-disable no-param-reassign */
 
-import { ArgumentTypesKey } from './symbols';
-import { DependencyKey, FactoryFunction, InjectableConstructor } from './types';
+import { ArgumentTypesKey, IsConstructableKey } from './symbols';
+import {
+  CallableDependency,
+  ClassDependency,
+  DependencyKey,
+  FactoryFunction,
+} from './types';
 
 /**
  * "Decorate" a class with runtime type information needed to resolve its
@@ -17,10 +22,26 @@ import { DependencyKey, FactoryFunction, InjectableConstructor } from './types';
  */
 export function injectClass<T>(
   argTypes: DependencyKey<any>[],
-  type: InjectableConstructor<T>,
-): InjectableConstructor<T> {
-  type[ArgumentTypesKey] = [...argTypes];
-  return type;
+  target: ClassDependency<T>,
+): ClassDependency<T> {
+  target[ArgumentTypesKey] = [...argTypes];
+  target[IsConstructableKey] = true;
+  return target;
+}
+
+/**
+ * Mark a function as a callable dependency.
+ *
+ * @param argTypes
+ * @param target
+ */
+export function injectCallable<T>(
+  argTypes: DependencyKey<any>[],
+  target: CallableDependency<T>,
+): CallableDependency<T> {
+  target[ArgumentTypesKey] = [...argTypes];
+  target[IsConstructableKey] = false;
+  return target;
 }
 
 /**
@@ -36,10 +57,10 @@ export function injectClass<T>(
  * @param factory
  * @param argTypes
  */
-export function injectFunction<T>(
+export function injectFactory<T>(
   argTypes: DependencyKey<any>[],
-  factory: FactoryFunction<T>,
+  target: FactoryFunction<T>,
 ): FactoryFunction<T> {
-  factory[ArgumentTypesKey] = [...argTypes];
-  return factory;
+  target[ArgumentTypesKey] = [...argTypes];
+  return target;
 }
