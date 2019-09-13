@@ -1,8 +1,12 @@
 /* eslint-disable max-classes-per-file */
 
+import { DependencyIdKey } from './symbols';
 import { Injector } from './injector';
 import { assertNotNull, resolveDependencyKey } from './utils';
 import { injectClass, injectFunction } from './decorators';
+
+class SimpleConstructable {}
+injectClass([], SimpleConstructable);
 
 class ParentDependency {}
 
@@ -193,13 +197,18 @@ describe('Injector', () => {
   });
 
   describe('resolve()', () => {
-    class SimpleConstructable {}
-    injectClass([], SimpleConstructable);
-
     const simpleCallableInner = (): boolean => true;
     const simpleCallableOuter = async (): Promise<() => boolean> => (
       simpleCallableInner
     );
+
+    const complexCallableInner = (): boolean => true;
+    const complexCallableOuter = async (
+      constructable: SimpleConstructable,
+    ): Promise<() => boolean> => (
+      complexCallableInner
+    );
+    injectFunction([SimpleConstructable], complexCallableOuter);
 
     describe('with a simple constructable dependency', () => {
       let result: SimpleConstructable|null = null;
@@ -271,8 +280,8 @@ describe('Injector', () => {
     });
 
     describe('with a dependency from a factory function', () => {
-      let result: DummyTargetService|null = null;
-      let createdDependency: DummyDependency|null = null;
+      let result: SimpleConstructable|null = null;
+      let createdDependency: SimpleConstructable|null = null;
 
       beforeEach(() => {
         result = null;
@@ -280,23 +289,19 @@ describe('Injector', () => {
       });
 
       beforeEach(() => {
-        const factory = async (): Promise<DummyDependency> => {
-          createdDependency = new DummyDependency();
+        const factory = async (): Promise<SimpleConstructable> => {
+          createdDependency = new SimpleConstructable();
           return createdDependency;
         };
-        injector.provide(DummyDependency, factory);
+        injector.provide(SimpleConstructable, factory);
       });
 
       beforeEach(async () => {
-        result = await injector.resolve(DummyTargetService);
+        result = await injector.resolve(SimpleConstructable);
       });
 
-      it('successfully creates an instance', () => {
-        expect(result).not.toBeNull();
-      });
-
-      it('injects dependency into the instance', () => {
-        expect(assertNotNull(result).dependency).toBe(createdDependency);
+      it('resolves to the created dependency', () => {
+        expect(result).toBe(createdDependency);
       });
     });
 
@@ -327,7 +332,101 @@ describe('Injector', () => {
 
       it('throws an error', () => {
         expect(assertNotNull(error).message)
-          .toEqual('Circular dependency detected: Symbol(CircularB dependency key)');
+          .toEqual('Circular dependency detected: Symbol(CircularB) <- Symbol(CircularA) <- Symbol(CircularB)');
+      });
+    });
+
+    describe('when bound to an incompatible instance', () => {
+      class UnrelatedClass {}
+
+      beforeEach(() => {
+        // eslint-disable-next-line dot-notation
+        injector['_services'][(SimpleConstructable as any)[DependencyIdKey]]
+          = new UnrelatedClass();
+      });
+
+      beforeEach(async () => {
+        try {
+          await injector.resolve(SimpleConstructable);
+        } catch (err) {
+          error = err;
+        }
+      });
+
+      it('throws an error', () => {
+        expect(assertNotNull(error).message)
+          .toEqual('Resolved to an incompatible instance: SimpleConstructable');
+      });
+    });
+
+    describe('with a service with various dependencies', () => {
+      class SimpleService {
+        constructable: SimpleConstructable;
+
+        callable: () => boolean;
+
+        constructor(
+          constructable: SimpleConstructable,
+          callable: () => boolean,
+        ) {
+          this.constructable = constructable;
+          this.callable = callable;
+        }
+      }
+      injectClass([SimpleConstructable, complexCallableOuter], SimpleService);
+
+      let result: SimpleService|null = null;
+
+      beforeEach(() => {
+        result = null;
+      });
+
+      beforeEach(async () => {
+        result = await injector.resolve(SimpleService);
+      });
+
+      it('resolves to a SimpleService instance', () => {
+        expect(result).toBeInstanceOf(SimpleService);
+      });
+
+      it('resolves constructable dependency', () => {
+        expect(assertNotNull(result).constructable)
+          .toBeInstanceOf(SimpleConstructable);
+      });
+
+      it('resolves callable dependency', () => {
+        expect(assertNotNull(result).callable).toBe(complexCallableInner);
+      });
+    });
+  });
+
+  describe('_upsert', () => {
+    const expected: SimpleConstructable = new SimpleConstructable();
+    let result: SimpleConstructable|null = null;
+    let upsert: (<T>(key: symbol, source: () => Promise<T>) => Promise<T>);
+
+    beforeEach(() => {
+      // Disabled to access private method.
+      // eslint-disable-next-line dot-notation
+      upsert = injector['_upsert'].bind(injector);
+
+      result = null;
+    });
+
+    describe('when already bound', () => {
+      beforeEach(() => {
+        injector.bind(SimpleConstructable, expected);
+      });
+
+      beforeEach(async () => {
+        result = await upsert(
+          (SimpleConstructable as any)[DependencyIdKey],
+          async () => new SimpleConstructable(),
+        );
+      });
+
+      it('returns the previously bound instance', () => {
+        expect(result).toBe(expected);
       });
     });
   });

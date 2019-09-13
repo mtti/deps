@@ -32,7 +32,7 @@ export function resolveDependencyKey(source: DependencyKey<unknown>): symbol {
     return existingKey;
   }
 
-  const newKey = Symbol(`${source.name} dependency key`);
+  const newKey = Symbol(source.name);
   // eslint-disable-next-line no-param-reassign
   source[DependencyIdKey] = newKey;
   return newKey;
