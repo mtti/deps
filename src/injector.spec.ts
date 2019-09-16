@@ -359,6 +359,71 @@ describe('Injector', () => {
       });
     });
 
+    describe('with an undecorated class', () => {
+      class Undecorated {}
+
+      let result: Undecorated|null = null;
+
+      beforeEach(() => {
+        result = null;
+      });
+
+      beforeEach(async () => {
+        try {
+          result = await injector.resolve(Undecorated);
+        } catch (err) {
+          error = err;
+        }
+      });
+
+      it('does not set result', () => {
+        expect(result).toBeNull();
+      });
+
+      it('throws an error', () => {
+        expect(error).not.toBeNull();
+      });
+    });
+
+    describe('with a callable depending on an undecorated class', () => {
+      class Undecorated {}
+
+      async function callable(dep: Undecorated): Promise<() => Undecorated> {
+        return (): Undecorated => dep;
+      }
+      injectFunction([Undecorated], callable);
+
+      let resolved: (() => Undecorated)|null = null;
+
+      let result: Undecorated|null = null;
+
+      beforeEach(() => {
+        resolved = null;
+        result = null;
+      });
+
+      beforeEach(async () => {
+        try {
+          resolved = await injector.resolve(callable);
+          result = resolved();
+        } catch (err) {
+          error = err;
+        }
+      });
+
+      it('should not resolve', () => {
+        expect(resolved).toBeNull();
+      });
+
+      it('should not return a result', () => {
+        expect(result).toBeNull();
+      });
+
+      it('should throw an error', () => {
+        expect(error).not.toBeNull();
+      });
+    });
+
     describe('with a service with various dependencies', () => {
       class SimpleService {
         constructable: SimpleConstructable;
