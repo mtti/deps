@@ -51,3 +51,13 @@ export function isConstructable<T>(
   }
   return target[IsConstructableKey] === true;
 }
+
+/**
+ * Get indexes of all falsy entries in an array.
+ * @param target
+ */
+export function getFalsyEntries(target: any[]): number[] {
+  return Array.from(target.entries())
+    .filter(([, value]) => !value)
+    .map(([index]) => index);
+}

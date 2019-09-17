@@ -1,5 +1,6 @@
 /* eslint-disable no-param-reassign */
 
+import { getFalsyEntries } from './utils';
 import { ArgumentTypesKey, IsConstructableKey } from './symbols';
 import {
   CallableDependency,
@@ -23,6 +24,15 @@ export function injectClass<T>(
   argTypes: DependencyKey<any>[],
   target: ClassDependency<T>,
 ): ClassDependency<T> {
+  if (typeof target !== 'function') {
+    throw new Error(`Target type was '${typeof target}', expected 'function'`);
+  }
+
+  const falsyEntries = getFalsyEntries(argTypes);
+  if (falsyEntries.length > 0) {
+    throw new Error(`${target.name} argument type(s) at index(es) ${falsyEntries.join(',')} are falsy`);
+  }
+
   target[ArgumentTypesKey] = [...argTypes];
   target[IsConstructableKey] = true;
   return target;
@@ -45,6 +55,15 @@ export function injectFunction<T>(
   argTypes: DependencyKey<any>[],
   target: CallableDependency<T>,
 ): CallableDependency<T> {
+  if (typeof target !== 'function') {
+    throw new Error(`Target type was '${typeof target}', expected 'function'`);
+  }
+
+  const falsyEntries = getFalsyEntries(argTypes);
+  if (falsyEntries.length > 0) {
+    throw new Error(`${target.name} argument type(s) at index(es) ${falsyEntries.join(',')} are falsy`);
+  }
+
   target[ArgumentTypesKey] = [...argTypes];
   target[IsConstructableKey] = false;
   return target;
