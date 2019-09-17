@@ -21,60 +21,126 @@ class DummyResult {
 }
 
 describe('decorators', () => {
-  describe('injectableClass()', () => {
-    let targetType: ClassDependency<unknown>|null = null;
+  let error: Error|null = null;
 
-    beforeEach(() => {
-      targetType = class {
-        first: FirstDummyDependency;
+  beforeEach(() => {
+    error = null;
+  });
 
-        second: SecondDummyDependency;
+  describe(injectClass.name, () => {
+    describe('with valid arguments', () => {
+      let targetType: ClassDependency<unknown>|null = null;
 
-        constructor(
-          first: FirstDummyDependency,
-          second: SecondDummyDependency,
-        ) {
-          this.first = first;
-          this.second = second;
+      beforeEach(() => {
+        targetType = class {
+          first: FirstDummyDependency;
+
+          second: SecondDummyDependency;
+
+          constructor(
+            first: FirstDummyDependency,
+            second: SecondDummyDependency,
+          ) {
+            this.first = first;
+            this.second = second;
+          }
+        };
+      });
+
+      beforeEach(() => {
+        injectClass(
+          [FirstDummyDependency, SecondDummyDependency],
+          assertNotNull(targetType),
+        );
+      });
+
+      it('adds the correct runtime type information', () => {
+        expect(assertNotNull(targetType)[ArgumentTypesKey]).toEqual(
+          [FirstDummyDependency, SecondDummyDependency],
+        );
+      });
+    });
+
+    describe('with non-function type', () => {
+      beforeEach(() => {
+        try {
+          injectClass([], {} as any);
+        } catch (err) {
+          error = err;
         }
-      };
+      });
+
+      it('throws an error', () => {
+        expect(error).not.toBeNull();
+      });
     });
 
-    beforeEach(() => {
-      injectClass(
-        [FirstDummyDependency, SecondDummyDependency],
-        assertNotNull(targetType),
-      );
-    });
+    describe('with falsy argument', () => {
+      beforeEach(() => {
+        try {
+          injectClass([null as any], FirstDummyDependency);
+        } catch (err) {
+          error = err;
+        }
+      });
 
-    it('adds the correct runtime type information', () => {
-      expect(assertNotNull(targetType)[ArgumentTypesKey]).toEqual(
-        [FirstDummyDependency, SecondDummyDependency],
-      );
+      it('throws an error', () => {
+        expect(error).not.toBeNull();
+      });
     });
   });
 
-  describe('injectFactory()', () => {
-    let targetFunction: CallableDependency<unknown>|null;
+  describe(injectFunction.name, () => {
+    describe('with valid arguments', () => {
+      let targetFunction: CallableDependency<unknown>|null;
 
-    beforeEach(() => {
-      targetFunction = async (
-        first: FirstDummyDependency,
-        second: SecondDummyDependency,
-      ): Promise<DummyResult> => new DummyResult(first, second);
+      beforeEach(() => {
+        targetFunction = async (
+          first: FirstDummyDependency,
+          second: SecondDummyDependency,
+        ): Promise<DummyResult> => new DummyResult(first, second);
+      });
+
+      beforeEach(() => {
+        injectFunction(
+          [FirstDummyDependency, SecondDummyDependency],
+          assertNotNull(targetFunction),
+        );
+      });
+
+      it('adds the correct runtime type information', () => {
+        expect(assertNotNull(targetFunction)[ArgumentTypesKey]).toEqual(
+          [FirstDummyDependency, SecondDummyDependency],
+        );
+      });
     });
 
-    beforeEach(() => {
-      injectFunction(
-        [FirstDummyDependency, SecondDummyDependency],
-        assertNotNull(targetFunction),
-      );
+    describe('with non-function type', () => {
+      beforeEach(() => {
+        try {
+          injectFunction([], {} as any);
+        } catch (err) {
+          error = err;
+        }
+      });
+
+      it('throws an error', () => {
+        expect(error).not.toBeNull();
+      });
     });
 
-    it('adds the correct runtime type information', () => {
-      expect(assertNotNull(targetFunction)[ArgumentTypesKey]).toEqual(
-        [FirstDummyDependency, SecondDummyDependency],
-      );
+    describe('with falsy argument', () => {
+      beforeEach(() => {
+        try {
+          injectFunction([null as any], async () => null);
+        } catch (err) {
+          error = err;
+        }
+      });
+
+      it('throws an error', () => {
+        expect(error).not.toBeNull();
+      });
     });
   });
 });
